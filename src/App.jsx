@@ -471,18 +471,6 @@ function FinancesPanel({ finances, setFinances }) {
 
 // ─── HEALTH ───────────────────────────────────────────────────────────────────
 
-const MEAL_TYPES = [
-  { id: "breakfast", label: "Breakfast", icon: "🌅", color: "#fb923c", suggested: "07:00" },
-  { id: "lunch",     label: "Lunch",     icon: "☀️",  color: "#facc15", suggested: "13:00" },
-  { id: "dinner",    label: "Dinner",    icon: "🌆", color: "#a78bfa", suggested: "19:00" },
-  { id: "snack",     label: "Snack",     icon: "🍎",  color: "#4ade80", suggested: "16:00" },
-];
-
-function nowTime() {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-}
-
 function HealthPanel({ health, setHealth }) {
   const [healthSubTab, setHealthSubTab] = useState("vitals");
   const [vitalsForm, setVitalsForm] = useState({ date: today(), weight: "", bpSys: "", bpDia: "", water: "" });
@@ -865,9 +853,6 @@ function SleepPanel({ sleep, setSleep }) {
 }
 
 // ─── READING ──────────────────────────────────────────────────────────────────
-
-const BOOK_COLORS = ["#c9a96e", "#4ade80", "#60a5fa", "#f472b6", "#fb923c", "#a78bfa"];
-const STATUSES = ["Reading", "Completed", "Want to Read", "Abandoned"];
 
 function ReadingPanel({ reading, setReading }) {
   const [form, setForm] = useState({ title: "", author: "", status: "Reading", pages: "", currentPage: "", rating: "0", genre: "", startDate: today(), endDate: "" });
