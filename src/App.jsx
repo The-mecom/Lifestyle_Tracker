@@ -184,6 +184,219 @@ function LifestyleTracker({ session }) {
     </div>
   );
 }
+// ─── OVERVIEW ─────────────────────────────────────────────────────────────────
+
+function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
+  const savings = parseFloat(finances.savings) || 0;
+  const investments = parseFloat(finances.investments) || 0;
+  const totalDebt = (finances.debts || []).reduce((s, d) => s + (parseFloat(d.remaining) || parseFloat(d.amount) || 0), 0);
+  const totalExpenses = (finances.expenses || []).reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  const netWorth = savings + investments - totalDebt;
+  const assets = savings + investments;
+  const assetsPct = (assets + totalDebt) > 0 ? Math.round((assets / (assets + totalDebt)) * 100) : 0;
+
+  const latestHealth = (health.entries || []).find(e => e.entryType === "vitals" || !e.entryType);
+  const todayMealsOv = (health.entries || []).filter(e => e.entryType === "meal" && e.date === today());
+  const todayCaloriesOv = todayMealsOv.reduce((s, e) => s + (parseFloat(e.calories) || 0), 0);
+  const mealsLoggedToday = todayMealsOv.length;
+
+  const sleepEntries7 = (sleep.entries || []).slice(0, 7).filter(e => e.duration);
+  const avgSleep = sleepEntries7.length
+    ? (sleepEntries7.reduce((s, e) => s + parseFloat(e.duration), 0) / sleepEntries7.length).toFixed(1)
+    : null;
+  const avgSleepQuality = sleepEntries7.length
+    ? (sleepEntries7.reduce((s, e) => s + parseInt(e.quality), 0) / sleepEntries7.length).toFixed(1)
+    : null;
+
+  const booksReading = (reading.books || []).filter(b => b.status === "Reading").length;
+  const booksCompleted = (reading.books || []).filter(b => b.status === "Completed").length;
+  const qualityColor = (q) => { const n = parseFloat(q); return n >= 4 ? "#4ade80" : n >= 3 ? "#facc15" : "#f87171"; };
+
+  const insights = [];
+  if (avgSleep && parseFloat(avgSleep) < 7) insights.push({ type: "warn", text: `Averaging ${avgSleep}h sleep — below the 7h goal` });
+  if (avgSleep && parseFloat(avgSleep) >= 7) insights.push({ type: "good", text: `Great sleep average: ${avgSleep}h over 7 nights` });
+  if (latestHealth?.water && parseFloat(latestHealth.water) >= 2) insights.push({ type: "good", text: `Hitting water goals — ${latestHealth.water}L logged` });
+  if (latestHealth?.water && parseFloat(latestHealth.water) < 1.5) insights.push({ type: "warn", text: `Water intake low — only ${latestHealth.water}L logged` });
+  if (mealsLoggedToday > 0) insights.push({ type: "info", text: `${mealsLoggedToday} meal${mealsLoggedToday > 1 ? "s" : ""} logged today${todayCaloriesOv > 0 ? ` · ${todayCaloriesOv} cal` : ""}` });
+  if (totalDebt > 0 && totalDebt > savings) insights.push({ type: "warn", text: "Total debt exceeds savings" });
+  if (netWorth > 0 && totalDebt === 0) insights.push({ type: "good", text: "Debt-free! Your net worth is fully backed by assets" });
+  if (booksReading > 0) insights.push({ type: "info", text: `Currently reading ${booksReading} book${booksReading > 1 ? "s" : ""}` });
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      {/* Net worth hero */}
+      <div className="card" style={{ background: "linear-gradient(135deg, #111115 0%, #14141c 100%)", borderColor: "#c9a96e22" }}>
+        <span className="label">Net Worth</span>
+        <div className="serif" style={{ fontSize: 42, color: netWorth >= 0 ? "#c9a96e" : "#f87171", marginBottom: 6, lineHeight: 1 }}>
+          {netWorth < 0 ? "−" : ""}{fmt(Math.abs(netWorth))}
+        </div>
+        <div style={{ fontSize: 13, color: "#444", marginBottom: 16 }}>
+          Assets {fmt(assets)} · Debts {fmt(totalDebt)} · Expenses {fmt(totalExpenses)}
+        </div>
+        {(assets + totalDebt) > 0 && (
+          <div>
+            <div className="net-worth-bar">
+              <div style={{ width: `${assetsPct}%`, background: "linear-gradient(90deg, #4ade80, #86efac)", minWidth: assetsPct > 0 ? 6 : 0 }} />
+              <div style={{ width: `${100 - assetsPct}%`, background: "linear-gradient(90deg, #f87171, #fca5a5)", minWidth: (100 - assetsPct) > 0 ? 6 : 0 }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#444", marginTop: 5 }}>
+              <span style={{ color: "#4ade80" }}>▪ Assets {assetsPct}%</span>
+              <span style={{ color: "#f87171" }}>▪ Debts {100 - assetsPct}%</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 2x2 grid */}
+      <div className="overview-grid">
+        <div className="card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("finances")}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, color: "#777" }}>💰 Finances</span>
+            <span style={{ fontSize: 11, color: "#333" }}>open →</span>
+          </div>
+          {[
+            { label: "Savings", value: fmt(savings), color: "#4ade80" },
+            { label: "Investments", value: fmt(investments), color: "#60a5fa" },
+            { label: "Expenses", value: fmt(totalExpenses), color: "#f97316" },
+            { label: "Debts", value: fmt(totalDebt), color: "#f87171" },
+          ].map(s => (
+            <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 13, color: "#555" }}>{s.label}</span>
+              <span className="serif" style={{ color: s.color, fontSize: 17 }}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("health")}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, color: "#777" }}>🫀 Health</span>
+            <span style={{ fontSize: 11, color: "#333" }}>open →</span>
+          </div>
+          {latestHealth || mealsLoggedToday > 0 ? (
+            [
+              { label: "Weight", value: latestHealth?.weight ? `${latestHealth.weight} kg` : "—", color: "#4ade80" },
+              { label: "Blood Pressure", value: latestHealth?.bpSys ? `${latestHealth.bpSys}/${latestHealth.bpDia}` : "—", color: "#f472b6" },
+              { label: "Water", value: latestHealth?.water ? `${latestHealth.water}L` : "—", color: "#60a5fa" },
+              { label: "Meals Today", value: mealsLoggedToday > 0 ? `${mealsLoggedToday} logged` : "—", color: "#fb923c" },
+            ].map(s => (
+              <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <span style={{ fontSize: 13, color: "#555" }}>{s.label}</span>
+                <span className="serif" style={{ color: s.color, fontSize: 17 }}>{s.value}</span>
+              </div>
+            ))
+          ) : <div className="empty-state" style={{ padding: "20px 0" }}>No data yet</div>}
+        </div>
+
+        <div className="card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("sleep")}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, color: "#777" }}>🌙 Sleep</span>
+            <span style={{ fontSize: 11, color: "#333" }}>open →</span>
+          </div>
+          {avgSleep ? (
+            <>
+              {[
+                { label: "Avg Duration", value: `${avgSleep}h`, color: parseFloat(avgSleep) >= 7 ? "#4ade80" : "#f97316" },
+                { label: "Avg Quality", value: `${avgSleepQuality}/5`, color: qualityColor(avgSleepQuality) },
+                { label: "Nights Logged", value: sleep.entries.length, color: "#c9a96e" },
+              ].map(s => (
+                <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: "#555" }}>{s.label}</span>
+                  <span className="serif" style={{ color: s.color, fontSize: 17 }}>{s.value}</span>
+                </div>
+              ))}
+              <div style={{ marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: "#333", marginBottom: 4 }}>7-night avg vs 9h ceiling</div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{
+                    width: `${Math.min((parseFloat(avgSleep) / 9) * 100, 100)}%`,
+                    background: parseFloat(avgSleep) >= 7 ? "linear-gradient(90deg,#4ade80,#86efac)" : "linear-gradient(90deg,#f97316,#fbbf24)"
+                  }} />
+                </div>
+              </div>
+            </>
+          ) : <div className="empty-state" style={{ padding: "20px 0" }}>No data yet</div>}
+        </div>
+
+        <div className="card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("reading")}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, color: "#777" }}>📚 Reading</span>
+            <span style={{ fontSize: 11, color: "#333" }}>open →</span>
+          </div>
+          {[
+            { label: "Reading Now", value: booksReading, color: "#60a5fa" },
+            { label: "Completed", value: booksCompleted, color: "#4ade80" },
+            { label: "Total Library", value: (reading.books || []).length, color: "#c9a96e" },
+          ].map(s => (
+            <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 13, color: "#555" }}>{s.label}</span>
+              <span className="serif" style={{ color: s.color, fontSize: 17 }}>{s.value}</span>
+            </div>
+          ))}
+          {(reading.books || []).filter(b => b.status === "Reading" && b.pages).slice(0, 1).map(b => {
+            const pct = Math.round((parseInt(b.currentPage || 0) / parseInt(b.pages)) * 100);
+            return (
+              <div key={b.id} style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 12, color: "#444", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  Now: {b.title}
+                </div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${pct}%`, background: "#c9a96e" }} />
+                </div>
+                <div style={{ fontSize: 11, color: "#444", marginTop: 3 }}>{pct}% complete</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Insights */}
+      {insights.length > 0 && (
+        <div className="card">
+          <p className="section-title" style={{ marginBottom: 12 }}>Insights</p>
+          <div style={{ display: "grid", gap: 8 }}>
+            {insights.map((ins, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 14px", borderRadius: 8,
+                background: ins.type === "good" ? "#0a1a0a" : ins.type === "warn" ? "#1a130a" : "#0a0f1a",
+                border: `1px solid ${ins.type === "good" ? "#1a341a" : ins.type === "warn" ? "#342210" : "#101830"}`
+              }}>
+                <span>{ins.type === "good" ? "✓" : ins.type === "warn" ? "⚠" : "ℹ"}</span>
+                <span style={{ fontSize: 13, color: ins.type === "good" ? "#4ade80" : ins.type === "warn" ? "#facc15" : "#60a5fa" }}>
+                  {ins.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent activity */}
+      <div className="card">
+        <p className="section-title" style={{ marginBottom: 12 }}>Recent Activity</p>
+        {(() => {
+          const items = [
+            ...(finances.expenses || []).slice(0, 2).map(e => ({ date: e.date, text: `Expense: ${e.note || e.category}`, value: `−${fmtFull(e.amount)}`, color: "#f97316" })),
+            ...(health.entries || []).filter(e => e.entryType === "vitals" || !e.entryType).slice(0, 1).map(e => ({ date: e.date, text: `Vitals logged${e.weight ? ` · ${e.weight}kg` : ""}`, value: "🫀", color: "#f472b6" })),
+            ...(health.entries || []).filter(e => e.entryType === "meal").slice(0, 1).map(e => ({ date: e.date, text: `Meal: ${e.foods}`, value: e.calories ? `${e.calories} cal` : "🍽️", color: "#fb923c" })),
+            ...(sleep.entries || []).slice(0, 1).map(e => ({ date: e.date, text: `Sleep: ${e.duration}h recorded`, value: `Q ${e.quality}/5`, color: "#a78bfa" })),
+          ].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 6);
+          if (!items.length) return <div className="empty-state">Start logging to see your activity here</div>;
+          return items.map((item, i) => (
+            <div className="entry-row" key={i}>
+              <div>
+                <div style={{ fontSize: 13, color: "#ccc" }}>{item.text}</div>
+                <div style={{ fontSize: 11, color: "#333", marginTop: 2 }}>{item.date}</div>
+              </div>
+              <span style={{ fontSize: 13, color: item.color }}>{item.value}</span>
+            </div>
+          ));
+        })()}
+      </div>
+    </div>
+  );
+}
+
 // ─── FINANCES ────────────────────────────────────────────────────────────────
 
 function FinancesPanel({ finances, setFinances }) {
