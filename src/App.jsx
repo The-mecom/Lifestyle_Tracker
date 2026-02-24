@@ -68,6 +68,7 @@ export default function App() {
 
 function LifestyleTracker({ session }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [theme, setTheme] = useState(() => localStorage.getItem("lt_theme") || "dark");
   const userId = session.user.id;
   const username = session.user.user_metadata?.username || session.user.email?.split("@")[0] || "You";
 
@@ -79,87 +80,192 @@ function LifestyleTracker({ session }) {
     reading,  setReading,
   } = useSupabaseData(userId);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+  const handleSignOut = async () => { await supabase.auth.signOut(); };
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("lt_theme", next);
   };
+
+  const D = {
+    // Dark palette — richer, higher contrast
+    bg:        "#0c0c0f",
+    bgCard:    "#141418",
+    bgCard2:   "#1a1a20",
+    bgInput:   "#1e1e25",
+    border:    "#28282f",
+    border2:   "#32323c",
+    text:      "#f0ece2",
+    textSub:   "#9890a0",
+    textMuted: "#52505a",
+    accent:    "#c9a96e",
+    accentText:"#0c0c0f",
+    tabActive: "#c9a96e",
+    tabText:   "#0c0c0f",
+  };
+  const L = {
+    // Light palette — rich monochrome blacks
+    bg:        "#f5f4f2",
+    bgCard:    "#ffffff",
+    bgCard2:   "#efefed",
+    bgInput:   "#f0efed",
+    border:    "#d8d6d0",
+    border2:   "#c8c5be",
+    text:      "#0f0e0c",
+    textSub:   "#5a5650",
+    textMuted: "#a09c96",
+    accent:    "#1a1916",
+    accentText:"#f5f4f2",
+    tabActive: "#1a1916",
+    tabText:   "#f5f4f2",
+  };
+  const T = theme === "dark" ? D : L;
 
   if (loading) {
     return (
-      <div style={{ minHeight:"100vh", background:"#0a0a0c", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ minHeight:"100vh", background: T.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ textAlign:"center", fontFamily:"'DM Sans',sans-serif" }}>
-          <div style={{ fontSize:32, marginBottom:12 }}>◈</div>
-          <div style={{ color:"#444", fontSize:14 }}>Loading your data…</div>
+          <div style={{ fontSize:32, marginBottom:12, color: T.accent }}>◈</div>
+          <div style={{ color: T.textMuted, fontSize:14 }}>Loading your data…</div>
         </div>
       </div>
     );
   }
 
-  const sharedProps = { finances, setFinances, health, setHealth, sleep, setSleep, reading, setReading };
+  const sharedProps = { finances, setFinances, health, setHealth, sleep, setSleep, reading, setReading, T, theme };
 
   return (
-    <div style={{ minHeight:"100vh", background:"#0a0a0c", color:"#e8e4dc" }}>
+    <div style={{ minHeight:"100vh", background: T.bg, color: T.text, transition:"background 0.3s, color 0.3s" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
-        body{background:#0a0a0c;}
+        body{background:${T.bg};transition:background 0.3s;}
         .app{font-family:'DM Sans',sans-serif;}
         .serif{font-family:'Playfair Display',serif;}
-        input,select,textarea{background:#16161a;border:1px solid #252529;color:#e8e4dc;border-radius:8px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%;outline:none;transition:border-color 0.2s;}
-        input:focus,select:focus,textarea:focus{border-color:#c9a96e;}
-        input::placeholder{color:#3a3a42;}
-        select option{background:#16161a;}
-        .btn-primary{background:#c9a96e;color:#0a0a0c;border:none;padding:10px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:opacity 0.2s;letter-spacing:0.3px;}
-        .btn-primary:hover{opacity:0.85;}
-        .btn-ghost{background:transparent;color:#555;border:1px solid #252529;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
-        .btn-ghost:hover{border-color:#ff6b6b;color:#ff6b6b;}
-        .card{background:#111115;border:1px solid #1c1c22;border-radius:14px;padding:20px;}
-        .label{font-size:10px;text-transform:uppercase;letter-spacing:1.4px;color:#555;margin-bottom:6px;display:block;}
-        .stat-value{font-family:'Playfair Display',serif;font-size:26px;color:#c9a96e;}
-        .entry-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #16161a;}
+
+        input,select,textarea{
+          background:${T.bgInput};border:1px solid ${T.border};color:${T.text};
+          border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;
+          font-size:14px;width:100%;outline:none;transition:border-color 0.2s,background 0.3s;
+        }
+        input:focus,select:focus,textarea:focus{border-color:${T.accent};}
+        input::placeholder{color:${T.textMuted};}
+        select option{background:${T.bgCard};}
+
+        .btn-primary{
+          background:${T.accent};color:${T.accentText};border:none;
+          padding:11px 22px;border-radius:10px;font-family:'DM Sans',sans-serif;
+          font-weight:600;font-size:14px;cursor:pointer;transition:opacity 0.2s;
+          letter-spacing:0.4px;
+        }
+        .btn-primary:hover{opacity:0.82;}
+
+        .btn-ghost{
+          background:transparent;color:${T.textSub};border:1px solid ${T.border};
+          padding:6px 13px;border-radius:8px;font-size:12px;cursor:pointer;
+          transition:all 0.2s;font-family:'DM Sans',sans-serif;white-space:nowrap;
+        }
+        .btn-ghost:hover{border-color:#ef4444;color:#ef4444;}
+
+        .card{
+          background:${T.bgCard};border:1px solid ${T.border};
+          border-radius:16px;padding:22px;transition:background 0.3s,border-color 0.3s;
+        }
+        .card2{
+          background:${T.bgCard2};border:1px solid ${T.border};
+          border-radius:12px;padding:16px;transition:background 0.3s;
+        }
+
+        .label{
+          font-size:10px;text-transform:uppercase;letter-spacing:1.6px;
+          color:${T.textMuted};margin-bottom:6px;display:block;font-weight:500;
+        }
+        .stat-value{font-family:'Playfair Display',serif;font-size:26px;color:${T.accent};}
+
+        .entry-row{
+          display:flex;align-items:center;justify-content:space-between;
+          padding:12px 0;border-bottom:1px solid ${T.border};
+        }
         .entry-row:last-child{border-bottom:none;}
-        .tag{background:#1c1c22;border-radius:20px;padding:3px 10px;font-size:11px;color:#666;white-space:nowrap;}
-        .tab-btn{background:none;border:none;cursor:pointer;padding:9px 18px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;transition:all 0.2s;display:flex;align-items:center;gap:7px;white-space:nowrap;}
-        .tab-btn.active{background:#c9a96e;color:#0a0a0c;font-weight:600;}
-        .tab-btn:not(.active){color:#555;}
-        .tab-btn:not(.active):hover{color:#aaa;background:#16161a;}
-        .form-grid{display:grid;gap:12px;}
-        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-        .section-title{font-family:'Playfair Display',serif;font-size:18px;color:#e8e4dc;margin-bottom:4px;}
-        .section-sub{font-size:13px;color:#444;margin-bottom:16px;}
-        .progress-bar{height:6px;background:#1c1c22;border-radius:3px;overflow:hidden;margin-top:8px;}
+
+        .tag{
+          background:${T.bgCard2};border:1px solid ${T.border};border-radius:20px;
+          padding:3px 10px;font-size:11px;color:${T.textSub};white-space:nowrap;
+        }
+
+        .tab-btn{
+          background:none;border:none;cursor:pointer;padding:9px 18px;border-radius:10px;
+          font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;
+          transition:all 0.2s;display:flex;align-items:center;gap:7px;white-space:nowrap;
+        }
+        .tab-btn.active{background:${T.tabActive};color:${T.tabText};font-weight:600;}
+        .tab-btn:not(.active){color:${T.textMuted};}
+        .tab-btn:not(.active):hover{color:${T.textSub};background:${T.bgCard2};}
+
+        .form-grid{display:grid;gap:14px;}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+        .section-title{
+          font-family:'Playfair Display',serif;font-size:19px;
+          color:${T.text};margin-bottom:4px;font-weight:600;
+        }
+        .section-sub{font-size:13px;color:${T.textSub};margin-bottom:16px;line-height:1.5;}
+
+        .progress-bar{height:6px;background:${T.bgCard2};border-radius:3px;overflow:hidden;margin-top:8px;}
         .progress-fill{height:100%;border-radius:3px;transition:width 0.5s ease;}
-        .book-card{background:#111115;border:1px solid #1c1c22;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:14px;}
-        .book-spine{width:4px;height:44px;border-radius:2px;flex-shrink:0;margin-top:2px;}
-        .empty-state{text-align:center;padding:36px 20px;color:#333;font-size:14px;}
-        .overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-        .debt-card{background:#111115;border:1px solid #1c1c22;border-radius:10px;padding:16px;}
+
+        .book-card{
+          background:${T.bgCard};border:1px solid ${T.border};
+          border-radius:12px;padding:15px 17px;display:flex;align-items:flex-start;gap:14px;
+        }
+        .book-spine{width:4px;height:46px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+        .empty-state{text-align:center;padding:40px 20px;color:${T.textMuted};font-size:14px;}
+        .overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+        .debt-card{background:${T.bgCard};border:1px solid ${T.border};border-radius:12px;padding:18px;}
         .net-worth-bar{height:8px;border-radius:4px;overflow:hidden;display:flex;gap:2px;}
-        @media(max-width:600px){.overview-grid{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}}
+
+        /* Scrollbar */
+        ::-webkit-scrollbar{width:5px;height:5px;}
+        ::-webkit-scrollbar-track{background:${T.bg};}
+        ::-webkit-scrollbar-thumb{background:${T.border2};border-radius:3px;}
+
+        @media(max-width:600px){
+          .overview-grid{grid-template-columns:1fr;}
+          .form-row{grid-template-columns:1fr;}
+        }
       `}</style>
 
-      <div className="app" style={{ maxWidth:780, margin:"0 auto", padding:"0 16px 60px" }}>
+      <div className="app" style={{ maxWidth:800, margin:"0 auto", padding:"0 18px 80px" }}>
         {/* Header */}
-        <div style={{ padding:"28px 0 20px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
+        <div style={{ padding:"30px 0 22px", borderBottom:`1px solid ${T.border}`, marginBottom:24 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div>
-              <p className="label" style={{ marginBottom:6 }}>Welcome back, {username}</p>
-              <h1 className="serif" style={{ fontSize:32, fontWeight:700, color:"#e8e4dc", lineHeight:1.1 }}>
-                Lifestyle <span style={{ color:"#c9a96e" }}>Tracker</span>
+              <p className="label" style={{ marginBottom:5 }}>Welcome back, {username}</p>
+              <h1 className="serif" style={{ fontSize:34, fontWeight:700, color:T.text, lineHeight:1.1 }}>
+                Lifestyle <span style={{ color:T.accent }}>Tracker</span>
               </h1>
             </div>
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
-              <p style={{ color:"#333", fontSize:12 }}>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8 }}>
+              <p style={{ color:T.textMuted, fontSize:12 }}>
                 {new Date().toLocaleDateString("en-NG",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
               </p>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                {syncing && <span style={{ fontSize:11, color:"#555" }}>saving…</span>}
+                {syncing && <span style={{ fontSize:11, color:T.textMuted }}>saving…</span>}
+                {/* Theme toggle */}
+                <button onClick={toggleTheme} title="Toggle theme" style={{
+                  background: T.bgCard2, border:`1px solid ${T.border}`,
+                  borderRadius:8, padding:"5px 10px", cursor:"pointer",
+                  fontSize:15, lineHeight:1, transition:"all 0.2s"
+                }}>
+                  {theme === "dark" ? "☀️" : "🌙"}
+                </button>
                 <button onClick={handleSignOut} style={{
-                  background:"transparent", border:"1px solid #252529", color:"#555",
-                  padding:"5px 12px", borderRadius:6, fontSize:12, cursor:"pointer",
-                  fontFamily:"'DM Sans',sans-serif", transition:"all 0.2s"
+                  background:"transparent", border:`1px solid ${T.border}`, color:T.textSub,
+                  padding:"5px 13px", borderRadius:8, fontSize:12, cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif", transition:"all 0.2s", fontWeight:500
                 }}
-                  onMouseOver={e=>e.target.style.color="#f87171"}
-                  onMouseOut={e=>e.target.style.color="#555"}
+                  onMouseOver={e=>{e.currentTarget.style.borderColor="#ef4444";e.currentTarget.style.color="#ef4444";}}
+                  onMouseOut={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.textSub;}}
                 >Sign out</button>
               </div>
             </div>
@@ -167,7 +273,7 @@ function LifestyleTracker({ session }) {
         </div>
 
         {/* Tabs */}
-        <div style={{ display:"flex", gap:4, marginBottom:24, overflowX:"auto", paddingBottom:12, borderBottom:"1px solid #16161a" }}>
+        <div style={{ display:"flex", gap:4, marginBottom:26, overflowX:"auto", paddingBottom:4 }}>
           {TABS.map(t => (
             <button key={t.id} className={`tab-btn ${activeTab===t.id?"active":""}`} onClick={()=>setActiveTab(t.id)}>
               <span>{t.icon}</span><span>{t.label}</span>
@@ -176,17 +282,17 @@ function LifestyleTracker({ session }) {
         </div>
 
         {activeTab==="overview"  && <OverviewPanel  {...sharedProps} setActiveTab={setActiveTab} />}
-        {activeTab==="finances"  && <FinancesPanel  finances={finances} setFinances={setFinances} />}
-        {activeTab==="health"    && <HealthPanel    health={health}     setHealth={setHealth} />}
-        {activeTab==="sleep"     && <SleepPanel     sleep={sleep}       setSleep={setSleep} />}
-        {activeTab==="reading"   && <ReadingPanel   reading={reading}   setReading={setReading} />}
+        {activeTab==="finances"  && <FinancesPanel  finances={finances} setFinances={setFinances} T={T} />}
+        {activeTab==="health"    && <HealthPanel    health={health}     setHealth={setHealth} T={T} />}
+        {activeTab==="sleep"     && <SleepPanel     sleep={sleep}       setSleep={setSleep} T={T} />}
+        {activeTab==="reading"   && <ReadingPanel   reading={reading}   setReading={setReading} T={T} />}
       </div>
     </div>
   );
 }
 // ─── OVERVIEW ─────────────────────────────────────────────────────────────────
 
-function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
+function OverviewPanel({ finances, health, sleep, reading, setActiveTab, T, theme }) {
   const savings = parseFloat(finances.savings) || 0;
   const investments = parseFloat(finances.investments) || 0;
   const totalDebt = (finances.debts || []).reduce((s, d) => s + (parseFloat(d.remaining) || parseFloat(d.amount) || 0), 0);
@@ -225,23 +331,23 @@ function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {/* Net worth hero */}
-      <div className="card" style={{ background: "linear-gradient(135deg, #111115 0%, #14141c 100%)", borderColor: "#c9a96e22" }}>
+      <div className="card" style={{ background: theme === "dark" ? "linear-gradient(135deg, #141418 0%, #18181f 100%)" : "linear-gradient(135deg, #ffffff 0%, #f0efe d 100%)", borderColor: T.accent + "33" }}>
         <span className="label">Net Worth</span>
-        <div className="serif" style={{ fontSize: 42, color: netWorth >= 0 ? "#c9a96e" : "#f87171", marginBottom: 6, lineHeight: 1 }}>
+        <div className="serif" style={{ fontSize: 46, color: netWorth >= 0 ? T.accent : "#ef4444", marginBottom: 6, lineHeight: 1 }}>
           {netWorth < 0 ? "−" : ""}{fmt(Math.abs(netWorth))}
         </div>
-        <div style={{ fontSize: 13, color: "#444", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: T.textSub, marginBottom: 16 }}>
           Assets {fmt(assets)} · Debts {fmt(totalDebt)} · Expenses {fmt(totalExpenses)}
         </div>
         {(assets + totalDebt) > 0 && (
           <div>
             <div className="net-worth-bar">
-              <div style={{ width: `${assetsPct}%`, background: "linear-gradient(90deg, #4ade80, #86efac)", minWidth: assetsPct > 0 ? 6 : 0 }} />
-              <div style={{ width: `${100 - assetsPct}%`, background: "linear-gradient(90deg, #f87171, #fca5a5)", minWidth: (100 - assetsPct) > 0 ? 6 : 0 }} />
+              <div style={{ width: `${assetsPct}%`, background: theme === "dark" ? "linear-gradient(90deg, #4ade80, #86efac)" : "linear-gradient(90deg, #1a6b3a, #2d9e5a)", minWidth: assetsPct > 0 ? 6 : 0 }} />
+              <div style={{ width: `${100 - assetsPct}%`, background: theme === "dark" ? "linear-gradient(90deg, #f87171, #fca5a5)" : "linear-gradient(90deg, #c0392b, #e74c3c)", minWidth: (100 - assetsPct) > 0 ? 6 : 0 }} />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#444", marginTop: 5 }}>
-              <span style={{ color: "#4ade80" }}>▪ Assets {assetsPct}%</span>
-              <span style={{ color: "#f87171" }}>▪ Debts {100 - assetsPct}%</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.textSub, marginTop: 6 }}>
+              <span style={{ color: theme === "dark" ? "#4ade80" : "#1a6b3a" }}>▪ Assets {assetsPct}%</span>
+              <span style={{ color: theme === "dark" ? "#f87171" : "#c0392b" }}>▪ Debts {100 - assetsPct}%</span>
             </div>
           </div>
         )}
@@ -251,17 +357,17 @@ function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
       <div className="overview-grid">
         <div className="card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("finances")}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <span style={{ fontSize: 13, color: "#777" }}>💰 Finances</span>
-            <span style={{ fontSize: 11, color: "#333" }}>open →</span>
+            <span style={{ fontSize: 13, color: T.textSub, fontWeight: 500 }}>💰 Finances</span>
+            <span style={{ fontSize: 11, color: T.textMuted }}>open →</span>
           </div>
           {[
-            { label: "Savings", value: fmt(savings), color: "#4ade80" },
-            { label: "Investments", value: fmt(investments), color: "#60a5fa" },
-            { label: "Expenses", value: fmt(totalExpenses), color: "#f97316" },
-            { label: "Debts", value: fmt(totalDebt), color: "#f87171" },
+            { label: "Savings", value: fmt(savings), color: theme === "dark" ? "#4ade80" : "#1a6b3a" },
+            { label: "Investments", value: fmt(investments), color: theme === "dark" ? "#60a5fa" : "#1a3d6b" },
+            { label: "Expenses", value: fmt(totalExpenses), color: theme === "dark" ? "#f97316" : "#b45309" },
+            { label: "Debts", value: fmt(totalDebt), color: theme === "dark" ? "#f87171" : "#c0392b" },
           ].map(s => (
             <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: "#555" }}>{s.label}</span>
+              <span style={{ fontSize: 13, color: T.textSub }}>{s.label}</span>
               <span className="serif" style={{ color: s.color, fontSize: 17 }}>{s.value}</span>
             </div>
           ))}
@@ -269,18 +375,18 @@ function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
 
         <div className="card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("health")}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <span style={{ fontSize: 13, color: "#777" }}>🫀 Health</span>
-            <span style={{ fontSize: 11, color: "#333" }}>open →</span>
+            <span style={{ fontSize: 13, color: T.textSub, fontWeight: 500 }}>🫀 Health</span>
+            <span style={{ fontSize: 11, color: T.textMuted }}>open →</span>
           </div>
           {latestHealth || mealsLoggedToday > 0 ? (
             [
-              { label: "Weight", value: latestHealth?.weight ? `${latestHealth.weight} kg` : "—", color: "#4ade80" },
-              { label: "Blood Pressure", value: latestHealth?.bpSys ? `${latestHealth.bpSys}/${latestHealth.bpDia}` : "—", color: "#f472b6" },
-              { label: "Water", value: latestHealth?.water ? `${latestHealth.water}L` : "—", color: "#60a5fa" },
-              { label: "Meals Today", value: mealsLoggedToday > 0 ? `${mealsLoggedToday} logged` : "—", color: "#fb923c" },
+              { label: "Weight", value: latestHealth?.weight ? `${latestHealth.weight} kg` : "—", color: theme === "dark" ? "#4ade80" : "#1a6b3a" },
+              { label: "Blood Pressure", value: latestHealth?.bpSys ? `${latestHealth.bpSys}/${latestHealth.bpDia}` : "—", color: theme === "dark" ? "#f472b6" : "#9b2076" },
+              { label: "Water", value: latestHealth?.water ? `${latestHealth.water}L` : "—", color: theme === "dark" ? "#60a5fa" : "#1a3d6b" },
+              { label: "Meals Today", value: mealsLoggedToday > 0 ? `${mealsLoggedToday} logged` : "—", color: theme === "dark" ? "#fb923c" : "#b45309" },
             ].map(s => (
               <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <span style={{ fontSize: 13, color: "#555" }}>{s.label}</span>
+                <span style={{ fontSize: 13, color: T.textSub }}>{s.label}</span>
                 <span className="serif" style={{ color: s.color, fontSize: 17 }}>{s.value}</span>
               </div>
             ))
@@ -289,23 +395,23 @@ function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
 
         <div className="card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("sleep")}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <span style={{ fontSize: 13, color: "#777" }}>🌙 Sleep</span>
-            <span style={{ fontSize: 11, color: "#333" }}>open →</span>
+            <span style={{ fontSize: 13, color: T.textSub, fontWeight: 500 }}>🌙 Sleep</span>
+            <span style={{ fontSize: 11, color: T.textMuted }}>open →</span>
           </div>
           {avgSleep ? (
             <>
               {[
-                { label: "Avg Duration", value: `${avgSleep}h`, color: parseFloat(avgSleep) >= 7 ? "#4ade80" : "#f97316" },
+                { label: "Avg Duration", value: `${avgSleep}h`, color: parseFloat(avgSleep) >= 7 ? (theme === "dark" ? "#4ade80" : "#1a6b3a") : (theme === "dark" ? "#f97316" : "#b45309") },
                 { label: "Avg Quality", value: `${avgSleepQuality}/5`, color: qualityColor(avgSleepQuality) },
-                { label: "Nights Logged", value: sleep.entries.length, color: "#c9a96e" },
+                { label: "Nights Logged", value: sleep.entries.length, color: T.accent },
               ].map(s => (
                 <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <span style={{ fontSize: 13, color: "#555" }}>{s.label}</span>
+                  <span style={{ fontSize: 13, color: T.textSub }}>{s.label}</span>
                   <span className="serif" style={{ color: s.color, fontSize: 17 }}>{s.value}</span>
                 </div>
               ))}
               <div style={{ marginTop: 4 }}>
-                <div style={{ fontSize: 11, color: "#333", marginBottom: 4 }}>7-night avg vs 9h ceiling</div>
+                <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>7-night avg vs 9h ceiling</div>
                 <div className="progress-bar">
                   <div className="progress-fill" style={{
                     width: `${Math.min((parseFloat(avgSleep) / 9) * 100, 100)}%`,
@@ -319,16 +425,16 @@ function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
 
         <div className="card" style={{ cursor: "pointer" }} onClick={() => setActiveTab("reading")}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <span style={{ fontSize: 13, color: "#777" }}>📚 Reading</span>
-            <span style={{ fontSize: 11, color: "#333" }}>open →</span>
+            <span style={{ fontSize: 13, color: T.textSub, fontWeight: 500 }}>📚 Reading</span>
+            <span style={{ fontSize: 11, color: T.textMuted }}>open →</span>
           </div>
           {[
-            { label: "Reading Now", value: booksReading, color: "#60a5fa" },
-            { label: "Completed", value: booksCompleted, color: "#4ade80" },
-            { label: "Total Library", value: (reading.books || []).length, color: "#c9a96e" },
+            { label: "Reading Now", value: booksReading, color: theme === "dark" ? "#60a5fa" : "#1a3d6b" },
+            { label: "Completed", value: booksCompleted, color: theme === "dark" ? "#4ade80" : "#1a6b3a" },
+            { label: "Total Library", value: (reading.books || []).length, color: T.accent },
           ].map(s => (
             <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: "#555" }}>{s.label}</span>
+              <span style={{ fontSize: 13, color: T.textSub }}>{s.label}</span>
               <span className="serif" style={{ color: s.color, fontSize: 17 }}>{s.value}</span>
             </div>
           ))}
@@ -336,13 +442,13 @@ function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
             const pct = Math.round((parseInt(b.currentPage || 0) / parseInt(b.pages)) * 100);
             return (
               <div key={b.id} style={{ marginTop: 8 }}>
-                <div style={{ fontSize: 12, color: "#444", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 12, color: T.textSub, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   Now: {b.title}
                 </div>
                 <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${pct}%`, background: "#c9a96e" }} />
+                  <div className="progress-fill" style={{ width: `${pct}%`, background: T.accent }} />
                 </div>
-                <div style={{ fontSize: 11, color: "#444", marginTop: 3 }}>{pct}% complete</div>
+                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 3 }}>{pct}% complete</div>
               </div>
             );
           })}
@@ -354,19 +460,23 @@ function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
         <div className="card">
           <p className="section-title" style={{ marginBottom: 12 }}>Insights</p>
           <div style={{ display: "grid", gap: 8 }}>
-            {insights.map((ins, i) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 14px", borderRadius: 8,
-                background: ins.type === "good" ? "#0a1a0a" : ins.type === "warn" ? "#1a130a" : "#0a0f1a",
-                border: `1px solid ${ins.type === "good" ? "#1a341a" : ins.type === "warn" ? "#342210" : "#101830"}`
-              }}>
-                <span>{ins.type === "good" ? "✓" : ins.type === "warn" ? "⚠" : "ℹ"}</span>
-                <span style={{ fontSize: 13, color: ins.type === "good" ? "#4ade80" : ins.type === "warn" ? "#facc15" : "#60a5fa" }}>
-                  {ins.text}
-                </span>
-              </div>
-            ))}
+            {insights.map((ins, i) => {
+              const colors = {
+                good: { bg: theme === "dark" ? "#0a1a0a" : "#f0faf0", border: theme === "dark" ? "#1a341a" : "#b8e6b8", text: theme === "dark" ? "#4ade80" : "#1a6b3a" },
+                warn: { bg: theme === "dark" ? "#1a130a" : "#fefaf0", border: theme === "dark" ? "#342210" : "#e6d5a0", text: theme === "dark" ? "#facc15" : "#92640a" },
+                info: { bg: theme === "dark" ? "#0a0f1a" : "#f0f4fa", border: theme === "dark" ? "#101830" : "#b8cce6", text: theme === "dark" ? "#60a5fa" : "#1a3d6b" },
+              }[ins.type] || {};
+              return (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "11px 14px", borderRadius: 10,
+                  background: colors.bg, border: `1px solid ${colors.border}`
+                }}>
+                  <span style={{ color: colors.text }}>{ins.type === "good" ? "✓" : ins.type === "warn" ? "⚠" : "ℹ"}</span>
+                  <span style={{ fontSize: 13, color: colors.text, fontWeight: 500 }}>{ins.text}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -376,19 +486,19 @@ function OverviewPanel({ finances, health, sleep, reading, setActiveTab }) {
         <p className="section-title" style={{ marginBottom: 12 }}>Recent Activity</p>
         {(() => {
           const items = [
-            ...(finances.expenses || []).slice(0, 2).map(e => ({ date: e.date, text: `Expense: ${e.note || e.category}`, value: `−${fmtFull(e.amount)}`, color: "#f97316" })),
-            ...(health.entries || []).filter(e => e.entryType === "vitals" || !e.entryType).slice(0, 1).map(e => ({ date: e.date, text: `Vitals logged${e.weight ? ` · ${e.weight}kg` : ""}`, value: "🫀", color: "#f472b6" })),
-            ...(health.entries || []).filter(e => e.entryType === "meal").slice(0, 1).map(e => ({ date: e.date, text: `Meal: ${e.foods}`, value: e.calories ? `${e.calories} cal` : "🍽️", color: "#fb923c" })),
-            ...(sleep.entries || []).slice(0, 1).map(e => ({ date: e.date, text: `Sleep: ${e.duration}h recorded`, value: `Q ${e.quality}/5`, color: "#a78bfa" })),
+            ...(finances.expenses || []).slice(0, 2).map(e => ({ date: e.date, text: `Expense: ${e.note || e.category}`, value: `−${fmtFull(e.amount)}`, color: theme === "dark" ? "#f97316" : "#b45309" })),
+            ...(health.entries || []).filter(e => e.entryType === "vitals" || !e.entryType).slice(0, 1).map(e => ({ date: e.date, text: `Vitals logged${e.weight ? ` · ${e.weight}kg` : ""}`, value: "🫀", color: theme === "dark" ? "#f472b6" : "#9b2076" })),
+            ...(health.entries || []).filter(e => e.entryType === "meal").slice(0, 1).map(e => ({ date: e.date, text: `Meal: ${e.foods}`, value: e.calories ? `${e.calories} cal` : "🍽️", color: theme === "dark" ? "#fb923c" : "#b45309" })),
+            ...(sleep.entries || []).slice(0, 1).map(e => ({ date: e.date, text: `Sleep: ${e.duration}h recorded`, value: `Q ${e.quality}/5`, color: theme === "dark" ? "#a78bfa" : "#5b21b6" })),
           ].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 6);
           if (!items.length) return <div className="empty-state">Start logging to see your activity here</div>;
           return items.map((item, i) => (
             <div className="entry-row" key={i}>
               <div>
-                <div style={{ fontSize: 13, color: "#ccc" }}>{item.text}</div>
-                <div style={{ fontSize: 11, color: "#333", marginTop: 2 }}>{item.date}</div>
+                <div style={{ fontSize: 13, color: T.text }}>{item.text}</div>
+                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{item.date}</div>
               </div>
-              <span style={{ fontSize: 13, color: item.color }}>{item.value}</span>
+              <span style={{ fontSize: 13, color: item.color, fontWeight: 500 }}>{item.value}</span>
             </div>
           ));
         })()}
